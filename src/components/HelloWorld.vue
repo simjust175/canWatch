@@ -11,9 +11,9 @@
         width="100px"
     /></v-row>
 
-    <v-row class="fill-height d-flex align-center" max-width="100%">
+    <v-row class="fill-height d-flex" min-width="100%">
       <v-col cols="12">
-        <v-text-field
+        <v-text-field 
           min-width="300"
           placeholder="Enter a YouTube URL & tap on enter"
           v-model="youtubeURL"

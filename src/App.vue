@@ -1,7 +1,7 @@
 <template>
   <v-app>
     <v-main>
-      <HelloWorld class="bg-black fill-height" />
+      <HelloWorld class="bg-black fill-height" max-width="100%"/>
     </v-main>
   </v-app>
 </template>
