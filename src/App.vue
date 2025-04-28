@@ -1,6 +1,6 @@
 <template>
   <v-app>
-    <v-main>
+    <v-main class="d-flex flex-column justify-center">
       <HelloWorld class="bg-black fill-height" max-width="100%"/>
     </v-main>
   </v-app>
