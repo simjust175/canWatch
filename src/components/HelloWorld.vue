@@ -59,7 +59,7 @@ export default {
   methods: {
     loadURL() {
       //Check if URL starts with YouTube format
-      if (!this.youtubeURL.startsWith("https://www.youtube.com/")) {
+      if (!this.youtubeURL.includes("youtube")) {
         console.warn("Please enter a valid YouTube URL");
         return;
       }
