@@ -1,7 +1,8 @@
 <template>
-  <v-container fluid>
+  <v-container class="flex-column align-stretch" fluid>
+
     <v-row justify="start">
-      <v-col cols="12">
+      <v-col cols="12" class="d-flex justify-center">
         <img
           src="../../public/Watch.png"
           alt="Watch logo"
@@ -11,9 +12,10 @@
       </v-col>
     </v-row>
 
-    <v-row class="fill-height mt-2" width="100%" justify="center">
-      <v-col cols="12">
-        <v-container>
+
+   <v-row class="mt-2" justify="center">
+      <v-col cols="12" align-self="stretch">
+         <v-container>
           <v-row>
             <v-col cols="12">
               <v-text-field
@@ -27,7 +29,7 @@
                 rounded="md"
                 clearable
               ></v-text-field>
-            </v-col>
+            </v-col> 
           </v-row>
           <v-row v-if="result">
             <v-col cols="12">
@@ -42,7 +44,7 @@
               ></iframe>
             </v-col>
           </v-row>
-        </v-container>
+        </v-container> 
       </v-col>
     </v-row>
   </v-container>
