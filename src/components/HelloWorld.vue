@@ -6,8 +6,8 @@
         <img
           src="../../public/Watch.png"
           alt="Watch logo"
-          height="100px"
-          width="100px"
+          height="90px"
+          width="90px"
         />
       </v-col>
     </v-row>
@@ -24,7 +24,7 @@
                 v-model="youtubeURL"
                 @keypress.enter="loadURL"
                 class="mx-12"
-                width="100"
+                width="70"
                 variant="outlined"
                 rounded="md"
                 clearable
