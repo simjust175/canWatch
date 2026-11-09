@@ -56,7 +56,7 @@
               <span class="history-symbol" aria-hidden="true">▶</span>
               <span class="history-info"><strong>{{ video.title || video.id }}</strong><small>{{ formatDate(video.openedAt) }} · {{ video.id }}</small></span>
             </button>
-            <button type="button" class="remove-button" :aria-label="'Remove '+video.id+' from history'" title="Remove" @click="removeHistory(video.id)">×</button>
+            <button type="button" class="remove-button" :aria-label="'Remove '+video.id+' from history'" title="Delete from history" @click="removeHistory(video.id)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v7m4-7v7"/></svg><span>Delete</span></button>
           </li>
         </ul>
       </section>
@@ -67,6 +67,7 @@
 
 <script>
 const STORAGE_KEY = 'canwatch-history-v1'
+const CURRENT_KEY = 'canwatch-current-video-v1'
 const ID_PATTERN = /^[a-zA-Z0-9_-]{11}$/
 
 function extractVideoId(text) {
@@ -119,6 +120,13 @@ export default {
           }))
         : []
     } catch (_) { this.history = [] }
+    try {
+      const lastId = localStorage.getItem(CURRENT_KEY)
+      if (lastId && ID_PATTERN.test(lastId) && this.history.some(item => item.id === lastId)) {
+        this.currentId = lastId
+        this.viewerOpen = true
+      }
+    } catch (_) { /* Storage may be unavailable */ }
   },
   methods: {
     loadURL() {
@@ -135,6 +143,7 @@ export default {
       if (this.currentId && this.currentId !== id) this.previousIds.push(this.currentId)
       this.currentId = id
       this.viewerOpen = true
+      this.persistCurrent()
       this.error = ''
       this.history = [{ id, openedAt: Date.now(), title: '' }, ...this.history.filter(item => item.id !== id)].slice(0, 50)
       this.saveHistory()
@@ -164,18 +173,35 @@ export default {
       if (id) {
         this.currentId = id
         this.viewerOpen = true
+        this.persistCurrent()
         this.error = ''
       }
     },
     removeHistory(id) {
       this.history = this.history.filter(item => item.id !== id)
+      this.previousIds = this.previousIds.filter(previousId => previousId !== id)
+      if (this.currentId === id) {
+        this.currentId = ''
+        this.viewerOpen = false
+        this.persistCurrent()
+      }
       this.saveHistory()
     },
     clearHistory() {
       if (window.confirm('Clear all saved video history on this device?')) {
         this.history = []
+        this.previousIds = []
+        this.currentId = ''
+        this.viewerOpen = false
+        this.persistCurrent()
         this.saveHistory()
       }
+    },
+    persistCurrent() {
+      try {
+        if (this.currentId) localStorage.setItem(CURRENT_KEY, this.currentId)
+        else localStorage.removeItem(CURRENT_KEY)
+      } catch (_) { this.error = 'Browser storage is unavailable; the current video may not survive refresh.' }
     },
     saveHistory() {
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.history)) }
@@ -287,4 +313,6 @@ button:focus-visible { outline: 2px solid #d2e4f0; outline-offset: 3px; }
 .footer-divider { padding: 0 7px; }
 @media (max-width: 520px) { .console { border-radius: 7px; } .input-area { padding: 20px 14px; } .input-row { margin-left: 0; } .hint { margin-left: 0; } .result-toolbar, .statusline, .history, .footer { padding-left: 14px; padding-right: 14px; } .inactive-tab { display: none; } }
 
+.remove-button { display: inline-flex; align-items: center; gap: 5px; padding: 8px 9px; border-radius: 5px; font-family: inherit; font-size: 11px; color: #8b949e; white-space: nowrap; }
+.remove-button:hover { background: #342228; color: #ffa198; }
 </style>
