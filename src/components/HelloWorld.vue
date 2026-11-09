@@ -1,49 +1,54 @@
 <template>
   <main class="shell">
-    <section class="console" aria-label="Personal media utility">
+    <section class="console" aria-label="Developer workspace">
       <header class="topbar">
         <div class="identity">
-          <span class="terminal-icon" aria-hidden="true">&gt;_</span>
-          <div><strong>Console</strong><small> / utility</small></div>
+          <span class="terminal-icon" aria-hidden="true">{ }</span>
+          <div><strong>DevTools</strong><small> / workspace</small></div>
         </div>
         <button class="icon-button" type="button" :aria-expanded="historyOpen" aria-controls="watch-history" aria-label="Toggle recent activity" title="Recent activity" @click="historyOpen = !historyOpen">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7M3 3v5h5M12 7v5l3 2"/></svg>
         </button>
       </header>
+      <nav class="tabs" aria-label="Workspace tabs"><span class="active-tab"><span class="tab-dot"></span> input.json</span><span class="inactive-tab">output.log</span><span class="tab-spacer"></span><span class="tab-meta">LOCAL</span></nav>
 
       <form @submit.prevent="loadURL" class="input-area">
-        <label for="video-input">INPUT / REFERENCE</label>
+        <label for="video-input"><span class="line-number">01</span> reference <span class="label-muted">: string</span></label>
         <div class="input-row">
-          <input id="video-input" v-model="youtubeURL" type="text" spellcheck="false" autocomplete="off" placeholder="Paste URL or video reference..." aria-describedby="input-help" />
+          <input id="video-input" v-model="youtubeURL" type="text" spellcheck="false" autocomplete="off" placeholder="Enter reference…" aria-describedby="input-help" />
           <button v-if="youtubeURL" type="button" class="clear-input" aria-label="Clear input" @click="youtubeURL = ''">×</button>
         </div>
-        <p id="input-help" class="hint">YouTube links, Shorts, live links, and 11-character video IDs</p>
+        <p id="input-help" class="hint"><span class="comment-prefix">//</span> Supports multiple URL formats and reference IDs</p>
         <div class="actions">
-          <button type="button" class="secondary" @click="pasteClipboard"><span aria-hidden="true">▣</span> Paste</button>
-          <button type="submit" class="primary"><span aria-hidden="true">▶</span> Go</button>
+          <button type="button" class="secondary" @click="pasteClipboard"><span aria-hidden="true">⌘</span> Paste input</button>
+          <button type="submit" class="primary"><span aria-hidden="true">↵</span> Run</button>
         </div>
       </form>
 
       <p v-if="error" role="alert" class="error">{{ error }}</p>
 
-      <section class="viewer" aria-label="Video player">
+      <div class="result-toolbar">
+        <span><span class="status-dot"></span> <span class="result-title">OUTPUT</span> <span class="muted-tag">{{ currentId ? 'ready' : 'idle' }}</span></span>
+        <button v-if="currentId" type="button" class="text-button" :aria-expanded="viewerOpen" @click="viewerOpen = !viewerOpen">{{ viewerOpen ? 'Collapse output' : 'Expand output' }}</button>
+      </div>
+      <section v-if="currentId && viewerOpen" class="viewer" aria-label="Video player">
         <iframe v-if="currentId" :key="currentId" :src="embedURL" title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-        <div v-else class="empty"><span class="play-ring" aria-hidden="true">▶</span><span>Viewer ready</span></div>
-      </section>
+        </section>
+      <div v-else class="output-placeholder"><span class="prompt-symbol">&gt;</span> {{ currentId ? 'Output collapsed — select Expand output to view' : 'Ready for input. Run a reference to see output.' }}</div>
 
       <div class="statusline">
-        <span>LOCAL SESSION</span>
+        <span>SESSION / 01</span>
         <div class="status-actions">
           <button v-if="previousIds.length" type="button" class="text-button" @click="goBack">↶ Previous</button>
           <button v-if="currentId" type="button" class="text-button" @click="copyCurrent">Copy link</button>
           <button type="button" class="text-button" :aria-expanded="historyOpen" aria-controls="watch-history" @click="historyOpen = !historyOpen">
-            Recent activity ({{ history.length }}) <span aria-hidden="true">{{ historyOpen ? '⌃' : '⌄' }}</span>
+            Logs ({{ history.length }}) <span aria-hidden="true">{{ historyOpen ? '⌃' : '⌄' }}</span>
           </button>
         </div>
       </div>
 
       <section v-if="historyOpen" id="watch-history" class="history" aria-label="Recent activity">
-        <div class="history-heading"><strong>Recent activity</strong><button v-if="history.length" type="button" class="text-button" @click="clearHistory">Clear history</button></div>
+        <div class="history-heading"><strong>Session logs</strong><button v-if="history.length" type="button" class="text-button" @click="clearHistory">Clear history</button></div>
         <p v-if="!history.length" class="hint">No saved videos yet. History stays in this browser.</p>
         <ul v-else>
           <li v-for="video in history" :key="video.id">
@@ -55,7 +60,7 @@
           </li>
         </ul>
       </section>
-      <footer class="footer">Stored on this device · No account needed</footer>
+      <footer class="footer"><span class="status-dot"></span> local workspace <span class="footer-divider">·</span> state saved in browser</footer>
     </section>
   </main>
 </template>
@@ -95,6 +100,7 @@ export default {
       previousIds: [],
       history: [],
       historyOpen: false,
+      viewerOpen: false,
       error: '',
     }
   },
@@ -128,6 +134,7 @@ export default {
       if (!ID_PATTERN.test(id)) return
       if (this.currentId && this.currentId !== id) this.previousIds.push(this.currentId)
       this.currentId = id
+      this.viewerOpen = true
       this.error = ''
       this.history = [{ id, openedAt: Date.now(), title: '' }, ...this.history.filter(item => item.id !== id)].slice(0, 50)
       this.saveHistory()
@@ -156,6 +163,7 @@ export default {
       const id = this.previousIds.pop()
       if (id) {
         this.currentId = id
+        this.viewerOpen = true
         this.error = ''
       }
     },
@@ -230,4 +238,53 @@ export default {
 .footer { font-size: 11px; color: #748a9c; margin-top: 24px; text-align: center; }
 button:focus-visible { outline: 2px solid #d2e4f0; outline-offset: 3px; }
 @media (max-width: 520px) { .console { border-radius: 14px; } .statusline { align-items: flex-start; } .status-actions { gap: 12px; } .topbar { margin-bottom: 24px; } }
+/* Developer-tool presentation: the interface resembles a quiet editor rather than a media homepage. */
+:global(body) { background: #0d1117; }
+.shell { background: #0d1117; color: #c9d1d9; padding-top: clamp(22px, 5vh, 52px); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.console { width: min(100%, 850px); background: #0d1117; border: 1px solid #30363d; border-radius: 9px; padding: 0; box-shadow: 0 8px 30px #0002; }
+.topbar { padding: 13px 17px; margin: 0; background: #161b22; border-bottom: 1px solid #30363d; }
+.identity { font-size: 13px; gap: 10px; letter-spacing: -.015em; }
+.identity small { font-size: 12px; color: #7d8590; }
+.terminal-icon { background: #252e39; border: 1px solid #303b48; border-radius: 5px; height: 27px; width: 33px; color: #8b949e; font-size: 12px; }
+.icon-button { padding: 4px; }
+.icon-button svg { width: 17px; height: 17px; }
+.tabs { display: flex; align-items: center; gap: 0; min-height: 39px; border-bottom: 1px solid #30363d; background: #0d1117; font-size: 11px; }
+.active-tab, .inactive-tab { padding: 12px 16px; white-space: nowrap; }
+.active-tab { border-right: 1px solid #30363d; border-bottom: 2px solid #8b949e; color: #c9d1d9; }
+.inactive-tab { color: #6e7681; }
+.tab-dot { display: inline-block; width: 7px; height: 7px; background: #6ea8aa; border-radius: 2px; margin-right: 6px; }
+.tab-spacer { flex: 1; }
+.tab-meta { padding: 0 16px; color: #6e7681; letter-spacing: .1em; }
+.input-area { padding: 22px 24px 16px; }
+.input-area label { font-size: 12px; color: #79c0ff; letter-spacing: 0; font-weight: 400; }
+.line-number { display: inline-block; width: 30px; color: #484f58; user-select: none; }
+.label-muted { color: #8b949e; }
+.input-row { margin: 12px 0 0 30px; background: #0d1117; border: 1px solid #30363d; border-radius: 5px; }
+.input-row:focus-within { border-color: #587fa3; outline: none; }
+.input-row input { padding: 11px 13px; font-family: inherit; font-size: 12px; }
+.input-row input::placeholder { color: #6e7681; }
+.hint { margin-left: 30px; color: #6e7681; }
+.comment-prefix { color: #7ee787; margin-right: 5px; }
+.actions { display: flex; justify-content: flex-end; gap: 8px; margin: 18px 0 0; }
+.actions button { border-radius: 5px; min-height: 34px; padding: 0 15px; font-family: inherit; font-size: 12px; font-weight: 500; }
+.secondary { background: #21262d; border: 1px solid #30363d !important; color: #c9d1d9; }
+.primary { background: #263b34; border: 1px solid #3c6150 !important; color: #b4d8c2; }
+.actions button:hover { filter: brightness(1.18); }
+.result-toolbar { display: flex; justify-content: space-between; align-items: center; padding: 11px 24px; background: #161b22; border-top: 1px solid #30363d; border-bottom: 1px solid #30363d; font-size: 11px; }
+.result-title { color: #8b949e; letter-spacing: .06em; }
+.status-dot { display: inline-block; background: #4e9b72; height: 6px; width: 6px; border-radius: 50%; margin-right: 7px; vertical-align: middle; }
+.muted-tag { color: #6e7681; margin-left: 8px; }
+.viewer { border-radius: 0; aspect-ratio: 16/9; }
+.output-placeholder { padding: 30px 26px; min-height: 85px; font-size: 12px; color: #6e7681; background: #0d1117; }
+.prompt-symbol { color: #7ee787; margin-right: 8px; }
+.statusline { margin: 0; padding: 13px 24px; border-top: 1px solid #30363d; color: #6e7681; }
+.text-button { font-family: inherit; font-size: 11px; }
+.history { margin: 0; padding: 18px 24px 6px; border-top: 1px solid #30363d; }
+.history-heading { color: #c9d1d9; }
+.history li { border-color: #21262d; }
+.history-symbol { background: #161b22; border-radius: 4px; color: #8b949e; }
+.footer { margin: 0; padding: 12px 24px; border-top: 1px solid #30363d; background: #161b22; text-align: left; color: #6e7681; font-size: 10px; }
+.footer-divider { padding: 0 7px; }
+@media (max-width: 520px) { .console { border-radius: 7px; } .input-area { padding: 20px 14px; } .input-row { margin-left: 0; } .hint { margin-left: 0; } .result-toolbar, .statusline, .history, .footer { padding-left: 14px; padding-right: 14px; } .inactive-tab { display: none; } }
+
 </style>
