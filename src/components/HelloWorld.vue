@@ -122,7 +122,7 @@ function ensureYouTubeAPI() {
     const previous = window.onYouTubeIframeAPIReady
     const timeout = setTimeout(() => reject(new Error('Player API timeout')), 6500)
     window.onYouTubeIframeAPIReady = () => {
-      if (typeof previous === 'function') previous()
+      try { if (typeof previous === 'function') previous() } catch (_) {}
       clearTimeout(timeout)
       if (window.YT && window.YT.Player) resolve(window.YT)
       else reject(new Error('Player API unavailable'))
@@ -262,7 +262,10 @@ export default {
     toggleSaved(id) {
       if (!VIDEO_ID_RE.test(id || '')) return
       if (this.savedIds.includes(id)) this.savedIds = this.savedIds.filter(item => item !== id)
-      else this.savedIds = [...this.savedIds, id]
+      else {
+        if (this.savedIds.length >= 250) { this.error = 'Saved queue limit: 250 videos.'; return }
+        this.savedIds = [...this.savedIds, id]
+      }
       this.writeItem(SAVED_KEY, this.savedIds)
       // The current player keeps running without interruption; the next Play all uses the latest list.
       if (this.mode === 'favorites' && !this.savedIds.length) {
@@ -274,7 +277,7 @@ export default {
       const base = 'https://www.youtube-nocookie.com/embed/'
       let src
       if (this.mode === 'youtubePlaylist') {
-        src = base + 'videoseries?listType=playlist&list=' + encodeURIComponent(this.playlistId)
+        src = base + (this.currentId || 'videoseries') + '?listType=playlist&list=' + encodeURIComponent(this.playlistId)
       } else {
         src = base + encodeURIComponent(this.currentId) + '?rel=0'
         if (this.mode === 'favorites') {
